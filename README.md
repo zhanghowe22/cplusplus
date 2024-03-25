@@ -32,3 +32,98 @@ This repository is used to record C++ study notes
 在虚继承的情况下，派生类需要通过虚基类表来访问虚基类的成员。当创建派生类的对象时，会调用虚基类的构造函数来初始化虚基类的成员，并在派生类对象中存储指向虚基类表的指针。这样，无论派生类通过哪条路径访问虚基类，都能够正确地访问到虚基类的成员。
 
 总的来说，虚继承的底层实现涉及到虚函数表和虚基类表的管理，以及在派生类对象中存储这些表的指针。这样可以确保在派生类中正确地访问虚基类的成员，并且避免了由于多次继承而引发的二义性和资源浪费。
+
+
+### 2. override、final的作用
+
+C++11引入了这两个关键字，它们用于改进和加强面向对象编程中的虚函数的使用。
+
+为什么要引入这两个关键字？
+
+`override`关键字
+
+`override`关键字用于明确指示一个子类的虚函数重写基类中的虚函数，它的作用是：
+
+(1) 增强代码可读性，通过在派生类中使用`override`关键字，可以清晰的表明这个函数是重写了基类中的虚函数，而不是一个新函数。
+
+(2) 防止意外的错误。如果在派生类中使用override关键字声明了一个函数，但这个函数与基类中的虚函数名称不匹配，编译器会产生错误，从而避免了因为拼写错误或函数签名不一致二导致的意外错误。
+
+``` c++
+#include <iostream>
+
+class Base {
+public:
+    virtual void foo() {
+        std::cout << "Base::foo()" << std::endl;
+    }
+
+    virtual void bar() const {
+        std::cout << "Base::bar()" << std::endl;
+    }
+};
+
+class Derived : public Base {
+public:
+    // 使用 override 关键字重写基类中的虚函数
+    void foo() override {
+        std::cout << "Derived::foo()" << std::endl;
+    }
+
+    // 使用 override 关键字重写基类中的虚函数，并指定常量成员函数
+    void bar() const override {
+        std::cout << "Derived::bar()" << std::endl;
+    }
+
+    // 使用 final 关键字阻止派生类进一步派生
+    // virtual void baz() final {
+    //     std::cout << "Derived::baz()" << std::endl;
+    // }
+};
+
+int main() {
+    Base* basePtr = new Derived();
+    basePtr->foo(); // 输出 "Derived::foo()"
+    basePtr->bar(); // 输出 "Derived::bar()"
+
+    delete basePtr;
+
+    return 0;
+}
+```
+
+`final`关键字
+
+`final`关键字用于禁止派生类对基类中的虚函数进行重写，或者禁止派生类继续派生。它的作用是：
+
+(1) 明确禁止重写。在基类中使用`final`关键字可以明确的表示该虚函数不允许在派生类中进行重写。这对于一些核心的、不希望被修改的虚函数非常有用。
+
+(2) 防止派生类进一步派生。在类的定义中使用`final`关键字可以防止该类被其他类继续派生。这对于一些设计上不希望被继承的类非常有用。
+
+综上所述，override 和 final 关键字在 C++ 中的引入主要是为了增强代码的可读性、降低错误的发生概率，并在一定程度上提高了代码的安全性。
+
+```c++
+#include <iostream>
+
+class Base {
+public:
+    // 声明为 final，阻止派生类对该函数进行重写
+    virtual void foo() final {
+        std::cout << "Base::foo()" << std::endl;
+    }
+};
+
+// 试图继承自 Base 并重写 foo() 函数，会导致编译错误
+// class Derived : public Base {
+// public:
+//     void foo() override {
+//         std::cout << "Derived::foo()" << std::endl;
+//     }
+// };
+
+int main() {
+    Base baseObj;
+    baseObj.foo(); // 输出 "Base::foo()"
+
+    return 0;
+}
+```
