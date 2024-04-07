@@ -127,3 +127,232 @@ int main() {
     return 0;
 }
 ```
+
+### 3. 左值、右值
+
+#### 左值
+
+左值是可以被标识并且在赋值语句中放置值的表达式或对象。简而言之，左值是可以取地址的表达式。在C++中，变量、数据元素、类成员等都是左值。左值可以出现在赋值语句的左边和右边，可以被修改。
+
+```c++
+int x = 10; // x是左值，因为他是一个变量
+int arr[5]; // arr[5]是左值，因为它是一个数组元素
+int* ptr = &x; // &x是左值，因为它是x的地址
+```
+
+可以作为左值的类型有：
+- 变量名、函数名以及数据成员名
+- 返回左值引用的函数调用
+- 由赋值运算符和复合赋值运算符连接的表达式，如(a=b，a-=b等)
+- 解引用表达式 *ptr
+- 前置自增和自减表达式(++a, --b)
+- 成员访问运算符的结果
+- 由指针访问成员运算符的结果
+- 下标运算符的结果
+- 字符串字面值
+
+对于一个表达式，凡是对其取地址(&)操作可以成功的都是左值。
+
+#### 右值
+
+右值是不能被标识比并且在赋值语句中放置值的表达式和对象。简而言之，右值是临时的、无法取地址的值。在C++中，字面值、临时对象、函数返回值都是右值。右值只能出现在赋值语句的右边，不能被修改。
+
+```c++
+int y = 5; // 5是右值，因为它是一个字面值
+int z = x + y; // x + y 是右值，因为它是一个临时值
+```
+
+##### 纯右值
+
+自C++11开始，纯右值相当于之前的右值，右值的类型如下：
+
+- 字面值或者函数返回的非引用都是纯右值
+- 字面值（字符串字面值除外），例如1,'a',true等
+- 返回值为非引用的函数调用或操作符重载。例如:str.substr(1,2)，str1+str2等
+- 后置自增或自减表达式
+- 算术表达式
+- 逻辑表达式
+- 比较表达式
+- 取地址表达式
+- lambda表达式
+
+
+### 4. 序列化和反序列化
+
+C++中的序列化通常用于将对象的状态转换为**可存储或传输的格式**。反序列化是将存储或传输的格式重新转换回对象的状态。
+
+> 为什么需要序列化和反序列化
+
+1. **数据持久化**：将对象的状态序列化到磁盘或数据库中，以便在程序关闭后能重新加载，这对于要长期存储或分享数据的应用程序非常重要。
+
+2. **数据传输**：在网络上或不同进程之间传输数据时，将对象序列化为一种通用的格式（如JSON、XML、Protocal Buffers等），然后在另一端将其反序列化。这种方式可用于客户端-服务器通信、分布式系统等场景。
+
+3. **跨平台兼容性**：序列化可以帮助解决不同平台或不同版本的应用程序之间的兼容性问题。通过将对象序列化为通用格式，可以保证数据在不同系统上的可移植性。
+
+4. **数据备份和恢复**：通过序列化，可以轻松地对数据进行备份，并在需要时将其恢复到原始状态。
+
+5. **状态传输**：在分布式系统中，序列化和反序列化可以用于将对象状态传输到另一个节点，以实现负载均衡或故障恢复。
+
+> C++如何实现序列化
+
+1. 自定义序列化
+这是一种基本的方式，程序员需要手动编写代码来将对象的状态转换为字节流，并在需要时将字节流还原为对象。这种方式需要开发者自己处理对象的每个成员变量，并将其转换为字节流。虽然这种方式灵活性很高，但需要较多的手动工作，并且容易出错。
+```C++
+#include <iostream>
+#include <fstream>
+
+class MyClass {
+private:
+    int data1;
+    double data2;
+public:
+    // 自定义序列化方法
+    void serialize(std::ofstream& ofs) const {
+        ofs.write(reinterpret_cast<const char*>(&data1), sizeof(data1));
+        ofs.write(reinterpret_cast<const char*>(&data2), sizeof(data2));
+    }
+
+    // 自定义反序列化方法
+    void deserialize(std::ifstream& ifs) {
+        ifs.read(reinterpret_cast<char*>(&data1), sizeof(data1));
+        ifs.read(reinterpret_cast<char*>(&data2), sizeof(data2));
+    }
+};
+
+int main() {
+    MyClass obj;
+    obj.serialize(std::ofstream("data.bin", std::ios::binary));
+
+    MyClass newObj;
+    newObj.deserialize(std::ifstream("data.bin", std::ios::binary));
+
+    return 0;
+}
+```
+2. JSON和XML序列化
+JSON（JavaScript Object Notation）和XML（eXtensible Markup Language）是两种通用的文本序列化格式，它们可以表示复杂的数据结构，并且易于阅读和理解。C++中有许多第三方库可以方便地将对象序列化为JSON或XML格式，例如RapidJSON、Boost.PropertyTree等。
+```C++
+#include <iostream>
+#include <fstream>
+#include <json/json.h>
+
+class MyClass {
+private:
+    int data1;
+    double data2;
+public:
+    // JSON序列化方法
+    Json::Value toJson() const {
+        Json::Value root;
+        root["data1"] = data1;
+        root["data2"] = data2;
+        return root;
+    }
+
+    // JSON反序列化方法
+    void fromJson(const Json::Value& root) {
+        data1 = root["data1"].asInt();
+        data2 = root["data2"].asDouble();
+    }
+};
+
+int main() {
+    MyClass obj;
+    Json::Value jsonData = obj.toJson();
+    std::ofstream ofs("data.json");
+    ofs << jsonData;
+
+    Json::Value newJsonData;
+    std::ifstream ifs("data.json");
+    ifs >> newJsonData;
+    MyClass newObj;
+    newObj.fromJson(newJsonData);
+
+    return 0;
+}
+```
+3. Protocol Buffers
+Protocol Buffers是一种由Google开发的二进制序列化格式，它具有高效、紧凑、跨语言等特点。通过定义.proto文件，可以生成对应的序列化和反序列化代码，从而简化了开发过程。在C++中，可以使用Google提供的protobuf库来实现Protocol Buffers的序列化和反序列化功能。
+
+假设我们有一个名为 message.proto 的Protocol Buffers定义文件，定义了一个包含int和double字段的消息。
+```C++
+syntax = "proto3";
+
+message MyMessage {
+    int32 data1 = 1;
+    double data2 = 2;
+}
+```
+然后我们可以使用Protocol Buffers编译器生成相应的C++代码：
+```css
+protoc --cpp_out=. message.proto
+```
+然后在C++代码中使用生成的代码来进行序列化和反序列化。
+
+4. MessagePack
+MessagePack是一种轻量级的二进制序列化格式，与JSON类似，但更加紧凑和高效。在C++中，有一些第三方库可以实现MessagePack的序列化和反序列化，例如msgpack-c。
+```C++
+#include <iostream>
+#include <msgpack.hpp>
+
+class MyClass {
+private:
+    int data1;
+    double data2;
+public:
+    MSGPACK_DEFINE(data1, data2); // 定义MessagePack序列化宏
+
+    // 在需要时还可以手动定义序列化和反序列化方法
+};
+
+int main() {
+    MyClass obj;
+    std::stringstream ss;
+    msgpack::pack(ss, obj);
+
+    msgpack::object_handle oh = msgpack::unpack(ss.str().data(), ss.str().size());
+    msgpack::object obj2 = oh.get();
+    MyClass newObj;
+    obj2.convert(&newObj);
+
+    return 0;
+}
+```
+5. Boost.Serialization
+Boost.Serialization是Boost库中提供的序列化框架，可以将C++对象序列化为二进制格式，也可以序列化为XML格式。它提供了高度的灵活性和可扩展性，但可能会增加代码的复杂性。
+```C++
+#include <iostream>
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
+class MyClass {
+private:
+    int data1;
+    double data2;
+public:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        ar & data1;
+        ar & data2;
+    }
+};
+
+int main() {
+    MyClass obj;
+    {
+        std::ofstream ofs("data.txt");
+        boost::archive::text_oarchive oa(ofs);
+        oa << obj;
+    }
+
+    MyClass newObj;
+    {
+        std::ifstream ifs("data.txt");
+        boost::archive::text_iarchive ia(ifs);
+        ia >> newObj;
+    }
+
+    return 0;
+}
+```
